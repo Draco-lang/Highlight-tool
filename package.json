@@ -1,0 +1,20 @@
+{
+  "name": "highlight-tool",
+  "version": "1.0.0",
+  "description": "A tool to generate syntax highlighting for multiple editors.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "syntax-highlight",
+    "textmate"
+  ],
+  "author": "LPeter1997",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.8.2"
+  }
+}
