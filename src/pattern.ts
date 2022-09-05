@@ -202,7 +202,7 @@ class RepPattern implements IPattern {
         let e = groupForPrecedence(this.element.toRegex(), Precedence.REP);
         // Find the nicest operator for the bounds
         let op = (() => {
-            if (!this.max) {
+            if (this.max === undefined) {
                 if (this.min == 0) return '*';
                 if (this.min == 1) return '+';
                 return `{${this.min},}`;

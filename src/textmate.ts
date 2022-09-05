@@ -1,13 +1,5 @@
 import { IPattern } from './pattern';
-
-/**
- * Constructs a scope object for tagging.
- * @param name The name of the scope.
- * @returns The constructed scope tag.
- */
-export function scope(name: string): object {
-    return new ScopeTag(name);
-}
+import { Scope } from './scope';
 
 /**
  * Constructs an include mode for the grammar.
@@ -53,9 +45,9 @@ export type TextMateGrammar = {
  */
 export type Mode =
     // Match mode
-    | { scope: string; match: IPattern; captures?: Map<string, string>; }
+    | { scope: Scope; match: IPattern; captures?: Map<string, string>; contains?: Mode[]; }
     // Surround mode
-    | { scope?: string; begin: IPattern; end: IPattern; beginCaptures?: Map<string, string>; endCaptures?: Map<string, string>; contains?: Mode[]; }
+    | { scope?: Scope; begin: IPattern; end: IPattern; beginCaptures?: Map<string, string>; endCaptures?: Map<string, string>; contains?: Mode[]; }
     // Sub-repository mode
     | { contains: Mode[]; }
     // Reference mode
@@ -69,10 +61,10 @@ export type Mode =
  */
 export function toTextMate(g: TextMateGrammar): object {
     // Fill in scope name
-    if (!g.scopeName) g.scopeName = toKebabCase(g.name);
+    if (g.scopeName === undefined) g.scopeName = toKebabCase(g.name);
 
     let repo: any = undefined;
-    if (g.repository) {
+    if (g.repository !== undefined) {
         repo = {};
         for (let [name, mode] of g.repository) repo[name] = modeToTextMate(mode, g);
     }
@@ -87,27 +79,29 @@ export function toTextMate(g: TextMateGrammar): object {
 }
 
 function modeToTextMate(m: Mode, g: TextMateGrammar): object {
-    // Simple includes are a 1-to-1 mapping
-    if ('include' in m) return m;
-
-    let result: any = {};
     let mObj = m as any;
 
+    // Simple includes are a 1-to-1 mapping
+    if (mObj.include !== undefined) return mObj;
+
+    // Build up the result from parts
+    let result: any = {};
+
     function handlePattern(patternName: string, capturesName: string) {
-        if (!mObj[patternName]) return;
+        if (mObj[patternName] === undefined) return;
         let { regex, captures } = compilePattern(mObj[patternName], mObj[capturesName], g);
         result[patternName] = regex;
         result[capturesName] = captures;
     }
 
-    if (mObj.scope) result.scope = fixScope(mObj.scope, g);
+    if (mObj.scope !== undefined) result.scope = fixScope(mObj.scope, g);
 
     handlePattern('match', 'captures');
     handlePattern('begin', 'beginCaptures');
     handlePattern('end', 'endCaptures');
 
     // Containment
-    if (mObj.contains) {
+    if (mObj.contains !== undefined) {
         let contained = mObj.contains as Mode[];
         result.patterns = contained.map(m => modeToTextMate(m, g));
     }
@@ -123,16 +117,29 @@ function compilePattern(p: IPattern, existingCaptures: any, g: TextMateGrammar):
 
     return {
         regex: result.regex,
-        captures: captures,
+        captures: Object.keys(captures).length == 0
+            ? undefined
+            : captures,
     }
 }
 
-function fixScope(scope: string, g: TextMateGrammar): string {
-    if (scope.endsWith(g.scopeName as string)) return scope;
-    return `${scope}.${g.scopeName}`;
+function fixScope(scope: Scope, g: TextMateGrammar): string {
+    let scopeStr = scopeToTextMate(scope);
+    return `${scopeStr}.${g.scopeName}`;
 }
 
-class ScopeTag { constructor(public name: string) { } }
+function scopeToTextMate(s: Scope): string {
+    switch (s) {
+    case Scope.BlockComment: return "comment.block";
+    case Scope.LineComment: return "comment.line";
+    case Scope.DocComment: return "comment.block.documentation";
+    case Scope.DocTag: return "comment.block.documentation";
+
+    default: return '???';
+    }
+}
+
+class ScopeTag { constructor(public scope: Scope) { } }
 
 /**
  * Converts a string to kebab-case.

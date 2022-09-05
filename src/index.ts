@@ -1,5 +1,6 @@
 import { TextMateGrammar, toTextMate, include } from "./textmate";
-import { regex } from './pattern';
+import { or, regex, literal } from './pattern';
+import { Scope } from './scope';
 
 let draco: TextMateGrammar = {
     name: 'Draco',
@@ -9,8 +10,14 @@ let draco: TextMateGrammar = {
     ],
     repository: new Map([
         ['comment', {
-            scope: 'documentation.comment',
+            scope: Scope.LineComment,
             match: regex('//.*$'),
+            contains: [
+                {
+                    scope: Scope.DocTag,
+                    match: or(literal('TODO'), literal('FIXME')),
+                }
+            ],
         }],
     ]),
 };
