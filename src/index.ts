@@ -1,2 +1,3 @@
+import { regexStats } from './pattern';
 
-console.log('Hello, World!');
+console.log(regexStats("[a-z]+(?:abc)"));
