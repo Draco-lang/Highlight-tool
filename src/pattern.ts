@@ -70,6 +70,7 @@ export function capture(p: IPattern, name: string): IPattern {
     return new CapturePattern(p, name);
 }
 
+var tagGroupCount = 0;
 /**
  * Tags a pattern with metadata.
  * @param p The pattern to tag.
@@ -77,13 +78,14 @@ export function capture(p: IPattern, name: string): IPattern {
  * @returns The tagged pattern.
  */
 export function tag(p: IPattern, ...tags: object[]): IPattern {
-    return new TagPattern(p, tags);
+    let captureName = `tagCapture_${tagGroupCount++}`;
+    return new TagPattern(new CapturePattern(p, captureName), tags);
 }
 
 /**
  * Represents a pattern that can be translated to a regular expression.
  */
-interface IPattern {
+export interface IPattern {
     /**
      * Translates this pattern to a regular expression.
      */
