@@ -1,4 +1,4 @@
-import { IPattern } from './pattern';
+import { IPattern, regex } from './pattern';
 import { Scope } from './scope';
 
 /**
@@ -115,7 +115,9 @@ function modeToTextMate(m: Mode | Mode[], g: TextMateGrammar): object {
     return result;
 }
 
-function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Record<string, CaptureValue>): { regex: string; captures: any; } {
+type RegexWithCaptures = { regex: string; captures: any; };
+
+function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Record<string, CaptureValue>): RegexWithCaptures {
     let result = p.toRegex();
     let captures: any = {};
 
@@ -171,12 +173,30 @@ function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Reco
         }
     }
 
-    return {
+    return optimizeRegexWithCaptures({
         regex: result.regex,
         captures: Object.keys(captures).length == 0
             ? undefined
             : captures,
+    });
+}
+
+function optimizeRegexWithCaptures(r: RegexWithCaptures): RegexWithCaptures {
+    let captureGroupCount = regex(r.regex).toRegex().captureGroupCount;
+    if (captureGroupCount == 1 && '1' in r.captures && r.regex.startsWith('(') && r.regex.endsWith(')')) {
+        // Common pattern, it's essentially
+        // match: (...)
+        // captures: { "1": ... }
+        //
+        // Simplify to
+        // match: ...
+        // captures: { "0": ... }
+        r = {
+            regex: r.regex.substring(1,  r.regex.length - 1),
+            captures: { '0': r.captures['1'] },
+        };
     }
+    return r;
 }
 
 function fixScope(scope: Scope, g: TextMateGrammar): string {
