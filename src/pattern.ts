@@ -116,6 +116,18 @@ export interface IPattern {
      * contrinution to the regex output.
      */
     contentElement(): IPattern;
+
+    // Builder style functions
+
+    /**
+     * Alias for @see capture.
+     */
+    capture(name: string): IPattern;
+
+    /**
+     * Alias for @see tag.
+     */
+    tag(...tags: any[]): IPattern;
 }
 
 /**
@@ -153,8 +165,24 @@ type RegexResult = {
     tags: Map<IPattern, any[]>;
 };
 
-class RegexPattern implements IPattern {
-    constructor(private text: string) { }
+abstract class PatternBase implements IPattern {
+    constructor() { }
+
+    abstract toRegex(): RegexResult;
+
+    abstract contentElement(): IPattern;
+
+    capture(name: string): IPattern {
+        return capture(this, name);
+    }
+
+    tag(...tags: any[]): IPattern {
+        return tag(this, ...tags);
+    }
+}
+
+class RegexPattern extends PatternBase {
+    constructor(private text: string) { super(); }
 
     toRegex(): RegexResult {
         let stats = regexStats(this.text);
@@ -173,8 +201,8 @@ class RegexPattern implements IPattern {
     }
 }
 
-class AltPattern implements IPattern {
-    constructor(private first: IPattern, private second: IPattern) { }
+class AltPattern extends PatternBase {
+    constructor(private first: IPattern, private second: IPattern) { super(); }
 
     toRegex(): RegexResult {
         let a = groupForPrecedence(this.first.toRegex(), Precedence.ALT);
@@ -194,8 +222,8 @@ class AltPattern implements IPattern {
     }
 }
 
-class SeqPattern implements IPattern {
-    constructor(private first: IPattern, private second: IPattern) { }
+class SeqPattern extends PatternBase {
+    constructor(private first: IPattern, private second: IPattern) { super(); }
 
     toRegex(): RegexResult {
         let a = groupForPrecedence(this.first.toRegex(), Precedence.SEQ);
@@ -215,8 +243,8 @@ class SeqPattern implements IPattern {
     }
 }
 
-class RepPattern implements IPattern {
-    constructor(private element: IPattern, private min: number, private max?: number) { }
+class RepPattern extends PatternBase {
+    constructor(private element: IPattern, private min: number, private max?: number) { super(); }
 
     toRegex(): RegexResult {
         let e = groupForPrecedence(this.element.toRegex(), Precedence.REP);
@@ -244,8 +272,8 @@ class RepPattern implements IPattern {
     }
 }
 
-class CapturePattern implements IPattern {
-    constructor(private element: IPattern, private name: string) { }
+class CapturePattern extends PatternBase {
+    constructor(private element: IPattern, private name: string) { super(); }
 
     toRegex(): RegexResult {
         let e = this.element.toRegex();
@@ -264,8 +292,8 @@ class CapturePattern implements IPattern {
     }
 }
 
-class LookaroundPattern implements IPattern {
-    constructor(private element: IPattern, private behind: boolean, private negate: boolean) { }
+class LookaroundPattern extends PatternBase {
+    constructor(private element: IPattern, private behind: boolean, private negate: boolean) { super(); }
 
     toRegex(): RegexResult {
         let e = this.element.toRegex();
@@ -282,8 +310,8 @@ class LookaroundPattern implements IPattern {
     }
 }
 
-class TagPattern implements IPattern {
-    constructor(private element: IPattern, private tags: any[]) { }
+class TagPattern extends PatternBase {
+    constructor(private element: IPattern, private tags: any[]) { super(); }
 
     toRegex(): RegexResult {
         if (!(this.element instanceof CapturePattern)) throw new Error('Tagging requires an underlying capture');

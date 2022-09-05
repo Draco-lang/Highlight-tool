@@ -33,9 +33,9 @@ let dmla: TextMateGrammar = {
         },
         'package-block': {
             begin: cat(
-                tag(literal('package'), Scope.Keyword),
+                literal('package').tag(Scope.Keyword),
                 rep1(SPACE),
-                tag(QUALIFIED_NAME, Scope.PackageName)),
+                QUALIFIED_NAME.tag(Scope.PackageName)),
             end: literal('}'),
         },
     },
