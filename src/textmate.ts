@@ -38,14 +38,14 @@ export type TextMateGrammar = {
     extensions: string[];
 
     /**
-     * The top-level patterns of the language.
+     * The top-level modes of the language.
      */
-    patterns: Mode[];
+    modes: Mode[];
 
     /**
-     * The pattern repository.
+     * The mode repository.
      */
-    repository?: object;
+    repository?: Map<string, Mode>;
 };
 
 /**
@@ -53,7 +53,7 @@ export type TextMateGrammar = {
  */
 export type Mode =
     // Match mode
-    | { scope: string; match: IPattern; captures: Map<string, string>; }
+    | { scope: string; match: IPattern; captures?: Map<string, string>; }
     // Surround mode
     | { scope?: string; begin: IPattern; end: IPattern; beginCaptures?: Map<string, string>; endCaptures?: Map<string, string>; contains?: Mode[]; }
     // Sub-repository mode
@@ -71,11 +71,65 @@ export function toTextMate(g: TextMateGrammar): object {
     // Fill in scope name
     if (!g.scopeName) g.scopeName = toKebabCase(g.name);
 
+    let repo: any = undefined;
+    if (g.repository) {
+        repo = {};
+        for (let [name, mode] of g.repository) repo[name] = modeToTextMate(mode, g);
+    }
+
     return {
         '$schema': 'https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json',
         name: g.name,
         scopeName: g.scopeName,
+        patterns: g.modes.map(m => modeToTextMate(m, g)),
+        repository: repo,
     };
+}
+
+function modeToTextMate(m: Mode, g: TextMateGrammar): object {
+    // Simple includes are a 1-to-1 mapping
+    if ('include' in m) return m;
+
+    let result: any = {};
+    let mObj = m as any;
+
+    function handlePattern(patternName: string, capturesName: string) {
+        if (!mObj[patternName]) return;
+        let { regex, captures } = compilePattern(mObj[patternName], mObj[capturesName], g);
+        result[patternName] = regex;
+        result[capturesName] = captures;
+    }
+
+    if (mObj.scope) result.scope = fixScope(mObj.scope, g);
+
+    handlePattern('match', 'captures');
+    handlePattern('begin', 'beginCaptures');
+    handlePattern('end', 'endCaptures');
+
+    // Containment
+    if (mObj.contains) {
+        let contained = mObj.contains as Mode[];
+        result.patterns = contained.map(m => modeToTextMate(m, g));
+    }
+
+    return result;
+}
+
+function compilePattern(p: IPattern, existingCaptures: any, g: TextMateGrammar): { regex: string; captures: any; } {
+    let result = p.toRegex();
+    let captures: any = {};
+
+    // TODO: Handle captures
+
+    return {
+        regex: result.regex,
+        captures: captures,
+    }
+}
+
+function fixScope(scope: string, g: TextMateGrammar): string {
+    if (scope.endsWith(g.scopeName as string)) return scope;
+    return `${scope}.${g.scopeName}`;
 }
 
 class ScopeTag { constructor(public name: string) { } }

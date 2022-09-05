@@ -1,10 +1,18 @@
-import { TextMateGrammar, toTextMate } from "./textmate";
+import { TextMateGrammar, toTextMate, include } from "./textmate";
+import { regex } from './pattern';
 
 let draco: TextMateGrammar = {
     name: 'Draco',
     extensions: ['draco'],
-    patterns: [],
-    repository: {},
+    modes: [
+        include('comment'),
+    ],
+    repository: new Map([
+        ['comment', {
+            scope: 'documentation.comment',
+            match: regex('//.*$'),
+        }],
+    ]),
 };
 let tm = toTextMate(draco);
 
