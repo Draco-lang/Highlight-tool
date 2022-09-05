@@ -383,7 +383,7 @@ type RegexStats = {
  * @param regex The regex to compute the stats for.
  * @returns The statistics for the regex.
  */
-export function regexStats(regex: string): RegexStats {
+function regexStats(regex: string): RegexStats {
     // Tracked precedence
     var prec = Precedence.GROUP;
     // Number of capture groups

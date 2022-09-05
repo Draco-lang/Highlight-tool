@@ -21,7 +21,12 @@ export class Scope {
     /**
      * Documentation tags, like '@param' or 'FIXME'.
      */
-    public static readonly DocTag = new Scope('comment.block.documentation');
+    public static readonly DocTag = new Scope('storage.type.class.jsdoc');
+
+    /**
+     * Punctuation of comments, like '//' or '/*'.
+     */
+    public static readonly CommentPunctuation = new Scope('punctuation.definition.comment');
 
     /**
      * Generic keyword category.

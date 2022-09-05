@@ -1,9 +1,8 @@
 import { TextMateGrammar, toTextMate, include } from "./textmate";
-import { or, regex, literal, rep0, rep1, cat, capture, tag } from './pattern';
+import { or, regex, literal, rep0, rep1, cat, capture, tag, lookahead, lookbehind } from './pattern';
 import { Scope } from './scope';
+import { IDENT, SPACE, COMMENT_TAGS, KEYWORD as keyword, KEYWORD } from './builtins';
 
-const IDENT = regex('[_[:alpha:]][_[:alnum:]]*');
-const SPACE = regex('\\s');
 const QUALIFIED_NAME = cat(
     IDENT,
     rep0(cat(
@@ -21,23 +20,48 @@ let dmla: TextMateGrammar = {
         include('package-block'),
     ],
     repository: {
-        comment: {
-            scope: Scope.LineComment,
-            match: regex('//.*$'),
-            contains: [
-                {
-                    scope: Scope.DocTag,
-                    match: or(literal('TODO'), literal('FIXME')),
-                }
-            ],
+        comment: [
+            {
+                scope: Scope.LineComment,
+                begin: literal('//'),
+                end: lookahead(regex('$')),
+                beginCaptures: {
+                    '$all': Scope.CommentPunctuation,
+                },
+                contains: [include('comment-tags')],
+            },
+            {
+                scope: Scope.BlockComment,
+                begin: literal('/*'),
+                end: literal('*/'),
+                beginCaptures: {
+                    '$all': Scope.CommentPunctuation,
+                },
+                endCaptures: {
+                    '$all': Scope.CommentPunctuation,
+                },
+                contains: [include('comment-tags')],
+            }
+        ],
+        'comment-tags': {
+            scope: Scope.DocTag,
+            match: COMMENT_TAGS,
         },
         'package-block': {
-            begin: cat(
-                literal('package').tag(Scope.Keyword),
-                rep1(SPACE),
-                QUALIFIED_NAME.tag(Scope.PackageName)),
-            end: literal('}'),
-        },
+            begin: lookahead(keyword('package')),
+            end: lookbehind(literal('}')),
+            contains: [
+                {
+                    begin: cat(
+                        keyword('package').tag(Scope.Keyword),
+                        rep1(SPACE),
+                        QUALIFIED_NAME.tag(Scope.PackageName)),
+                    end: lookahead(literal('{')),
+                    contains: [include('comment')],
+                },
+                include('comment'),
+            ]
+        }
     },
 };
 let tm = toTextMate(dmla);

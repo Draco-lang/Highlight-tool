@@ -37,7 +37,7 @@ export type TextMateGrammar = {
     /**
      * The mode repository.
      */
-    repository?: Record<string, Mode>;
+    repository?: Record<string, Mode | Mode[]>;
 };
 
 /**
@@ -45,14 +45,16 @@ export type TextMateGrammar = {
  */
 export type Mode =
     // Match mode
-    | { scope: Scope; match: IPattern; captures?: Record<string, string>; contains?: Mode[]; }
+    | { scope: Scope; match: IPattern; captures?: Record<string, CaptureValue>; contains?: Mode[]; }
     // Surround mode
-    | { scope?: Scope; begin: IPattern; end: IPattern; beginCaptures?: Record<string, Scope>; endCaptures?: Record<string, Scope>; contains?: Mode[]; }
+    | { scope?: Scope; begin: IPattern; end: IPattern; beginCaptures?: Record<string, CaptureValue>; endCaptures?: Record<string, CaptureValue>; contains?: Mode[]; }
     // Sub-repository mode
     | { contains: Mode[]; }
     // Reference mode
     | { include: string; }
     ;
+
+type CaptureValue = Mode | Scope;
 
 /**
  * Converts the given TextMate grammar into a JSON object.
@@ -72,14 +74,17 @@ export function toTextMate(g: TextMateGrammar): object {
     return {
         '$schema': 'https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json',
         name: g.name,
-        scopeName: g.scopeName,
+        scopeName: `source.${g.scopeName}`,
         fileTypes: g.extensions,
         patterns: g.modes.map(m => modeToTextMate(m, g)),
         repository: repo,
     };
 }
 
-function modeToTextMate(m: Mode, g: TextMateGrammar): object {
+function modeToTextMate(m: Mode | Mode[], g: TextMateGrammar): object {
+    // Arrays are groupings of other modes, just wrap it up
+    if (Array.isArray(m)) return modeToTextMate({ contains: m as Mode[] }, g);
+
     let mObj = m as any;
 
     // Simple includes are a 1-to-1 mapping
@@ -95,7 +100,7 @@ function modeToTextMate(m: Mode, g: TextMateGrammar): object {
         result[capturesName] = captures;
     }
 
-    if (mObj.scope !== undefined) result.scope = fixScope(mObj.scope, g);
+    if (mObj.scope !== undefined) result.name = fixScope(mObj.scope, g);
 
     handlePattern('match', 'captures');
     handlePattern('begin', 'beginCaptures');
@@ -110,7 +115,7 @@ function modeToTextMate(m: Mode, g: TextMateGrammar): object {
     return result;
 }
 
-function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Record<string, Scope>): { regex: string; captures: any; } {
+function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Record<string, CaptureValue>): { regex: string; captures: any; } {
     let result = p.toRegex();
     let captures: any = {};
 
@@ -136,7 +141,14 @@ function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Reco
             // Translate capture group name into numbering
             var newGroupName = translateGroupName(groupName);
             // Assign into result
-            captures[newGroupName] = fixScope(groupValue, g);
+            if (groupValue instanceof Scope) {
+                // Scope, wrap it up
+                captures[newGroupName] = { name: fixScope(groupValue, g) };
+            }
+            else {
+                // Treat as object
+                captures[newGroupName] = modeToTextMate(groupValue, g);
+            }
         }
     }
 
@@ -144,14 +156,18 @@ function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Reco
     for (let [pattern, tags] of result.tags) {
         // Look through each tag
         for (let tag of tags) {
-            // We only care about scopes
-            if (!(tag instanceof Scope)) continue;
-
             // Look up the group index of the pattern
             let groupIndex = result.captureGroups.get(pattern);
             if (groupIndex === undefined) throw new Error(`Internal error, group has no index entry for tag ${tag}`);
 
-            captures[groupIndex.toString()] = fixScope(tag, g);
+            // We only care about scopes
+            if (tag instanceof Scope) {
+                // Scope, wrap it up
+                captures[groupIndex.toString()] = { name: fixScope(tag, g) };
+            }
+            else {
+                // TODO: Handle other tags
+            }
         }
     }
 
