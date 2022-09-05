@@ -7,7 +7,7 @@ import { Scope } from './scope';
  * @returns The constructed include mode.
  */
 export function include(name: string): Mode {
-    return { include: name };
+    return { include: `#${name}` };
 }
 
 /**
@@ -47,7 +47,7 @@ export type Mode =
     // Match mode
     | { scope: Scope; match: IPattern; captures?: Map<string, string>; contains?: Mode[]; }
     // Surround mode
-    | { scope?: Scope; begin: IPattern; end: IPattern; beginCaptures?: Map<string, string>; endCaptures?: Map<string, string>; contains?: Mode[]; }
+    | { scope?: Scope; begin: IPattern; end: IPattern; beginCaptures?: Map<string, Scope>; endCaptures?: Map<string, Scope>; contains?: Mode[]; }
     // Sub-repository mode
     | { contains: Mode[]; }
     // Reference mode
@@ -73,6 +73,7 @@ export function toTextMate(g: TextMateGrammar): object {
         '$schema': 'https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json',
         name: g.name,
         scopeName: g.scopeName,
+        fileTypes: g.extensions,
         patterns: g.modes.map(m => modeToTextMate(m, g)),
         repository: repo,
     };
@@ -89,7 +90,7 @@ function modeToTextMate(m: Mode, g: TextMateGrammar): object {
 
     function handlePattern(patternName: string, capturesName: string) {
         if (mObj[patternName] === undefined) return;
-        let { regex, captures } = compilePattern(mObj[patternName], mObj[capturesName], g);
+        let { regex, captures } = compilePattern(mObj[patternName], g, mObj[capturesName]);
         result[patternName] = regex;
         result[capturesName] = captures;
     }
@@ -109,11 +110,34 @@ function modeToTextMate(m: Mode, g: TextMateGrammar): object {
     return result;
 }
 
-function compilePattern(p: IPattern, existingCaptures: any, g: TextMateGrammar): { regex: string; captures: any; } {
+function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Map<string, Scope>): { regex: string; captures: any; } {
     let result = p.toRegex();
     let captures: any = {};
 
-    // TODO: Handle captures
+    function translateGroupName(groupName: string): string {
+        // Special case
+        if (groupName == '$all') return '0';
+
+        // Find the corresponding pattern
+        let pattern = result.captureNames.get(groupName);
+        if (pattern === undefined) throw new Error(`Unknown capture group '${groupName}' referenced`);
+
+        // Find the corresponding index
+        let groupIndex = result.captureGroups.get(pattern);
+        if (groupIndex === undefined) throw new Error(`Internal error, group ${groupName} has no index entry`);
+
+        return groupIndex.toString();
+    }
+
+    // Look into the existing captures and translate them to numbers
+    if (existingCaptures !== undefined) {
+        for (let [groupName, groupValue] of existingCaptures) {
+            // Translate capture group name into numbering
+            var newGroupName = translateGroupName(groupName);
+            // Assign into result
+            captures[newGroupName] = fixScope(groupValue, g);
+        }
+    }
 
     return {
         regex: result.regex,
@@ -124,22 +148,8 @@ function compilePattern(p: IPattern, existingCaptures: any, g: TextMateGrammar):
 }
 
 function fixScope(scope: Scope, g: TextMateGrammar): string {
-    let scopeStr = scopeToTextMate(scope);
-    return `${scopeStr}.${g.scopeName}`;
+    return `${scope.textMateName}.${g.scopeName}`;
 }
-
-function scopeToTextMate(s: Scope): string {
-    switch (s) {
-    case Scope.BlockComment: return "comment.block";
-    case Scope.LineComment: return "comment.line";
-    case Scope.DocComment: return "comment.block.documentation";
-    case Scope.DocTag: return "comment.block.documentation";
-
-    default: return '???';
-    }
-}
-
-class ScopeTag { constructor(public scope: Scope) { } }
 
 /**
  * Converts a string to kebab-case.

@@ -1,12 +1,24 @@
 import { TextMateGrammar, toTextMate, include } from "./textmate";
-import { or, regex, literal } from './pattern';
+import { or, regex, literal, rep0, rep1, cat, capture } from './pattern';
 import { Scope } from './scope';
 
+const IDENT = regex('[_[:alpha:]][_[:alnum:]]*');
+const SPACE = regex('\\s');
+const QUALIFIED_NAME = cat(
+    IDENT,
+    rep0(cat(
+        rep0(SPACE),
+        literal('.'),
+        rep0(SPACE),
+        IDENT)));
+
 let draco: TextMateGrammar = {
-    name: 'Draco',
-    extensions: ['draco'],
+    name: 'D#',
+    scopeName: 'dsharp',
+    extensions: ['dmla'],
     modes: [
         include('comment'),
+        include('package-block'),
     ],
     repository: new Map([
         ['comment', {
@@ -18,6 +30,17 @@ let draco: TextMateGrammar = {
                     match: or(literal('TODO'), literal('FIXME')),
                 }
             ],
+        }],
+        ['package-block', {
+            begin: cat(
+                capture(literal('package'), 'keyword'),
+                rep1(SPACE),
+                capture(QUALIFIED_NAME, 'package-name')),
+            end: literal('}'),
+            beginCaptures: new Map([
+                ['keyword', Scope.Keyword],
+                ['package-name', Scope.PackageName],
+            ]),
         }],
     ]),
 };

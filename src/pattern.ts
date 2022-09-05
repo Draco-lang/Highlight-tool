@@ -70,18 +70,6 @@ export function capture(p: IPattern, name: string): IPattern {
     return new CapturePattern(p, name);
 }
 
-var tagGroupCount = 0;
-/**
- * Tags a pattern with metadata.
- * @param p The pattern to tag.
- * @param tags The tag values.
- * @returns The tagged pattern.
- */
-export function tag(p: IPattern, ...tags: object[]): IPattern {
-    let captureName = `tagCapture_${tagGroupCount++}`;
-    return new TagPattern(new CapturePattern(p, captureName), tags);
-}
-
 /**
  * Represents a pattern that can be translated to a regular expression.
  */
@@ -126,11 +114,6 @@ type RegexResult = {
      * The capture groups mapped from the pattern to the group number.
      */
     captureGroups: Map<IPattern, number>;
-
-    /**
-     * The tags mapped from the pattern to the list of assigned tags.
-     */
-    tags: Map<IPattern, object[]>;
 };
 
 class RegexPattern implements IPattern {
@@ -144,7 +127,6 @@ class RegexPattern implements IPattern {
             captureGroupCount: stats.captureGroupCount,
             captureNames: new Map(),
             captureGroups: new Map(),
-            tags: new Map(),
         };
     }
 
@@ -165,7 +147,6 @@ class AltPattern implements IPattern {
             captureGroupCount: a.captureGroupCount + b.captureGroupCount,
             captureNames: mergeMaps(a.captureNames, b.captureNames),
             captureGroups: mergeMaps(a.captureGroups, shiftCaptureGroups(b.captureGroups, a.captureGroupCount)),
-            tags: mergeMaps(a.tags, b.tags),
         };
     }
 
@@ -186,7 +167,6 @@ class SeqPattern implements IPattern {
             captureGroupCount: a.captureGroupCount + b.captureGroupCount,
             captureNames: mergeMaps(a.captureNames, b.captureNames),
             captureGroups: mergeMaps(a.captureGroups, shiftCaptureGroups(b.captureGroups, a.captureGroupCount)),
-            tags: mergeMaps(a.tags, b.tags),
         };
     }
 
@@ -235,23 +215,6 @@ class CapturePattern implements IPattern {
             captureGroupCount: e.captureGroupCount + 1,
             captureGroups: extendMap(shiftCaptureGroups(e.captureGroups, 1), [this.contentElement(), 1]),
             captureNames: extendMap(e.captureNames, [this.name, this.contentElement()]),
-            tags: e.tags,
-        };
-    }
-
-    contentElement(): IPattern {
-        return this.element.contentElement();
-    }
-}
-
-class TagPattern implements IPattern {
-    constructor(private element: IPattern, private tags: object[]) { }
-
-    toRegex(): RegexResult {
-        let e = this.element.toRegex();
-        return {
-            ...e,
-            tags: extendMap(e.tags, [this.contentElement(), this.tags]),
         };
     }
 

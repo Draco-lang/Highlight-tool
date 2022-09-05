@@ -1,25 +1,46 @@
 
 /**
- * The possible scopes for a syntax highlighter.
+ * Represents a scope that can be highlighted.
  */
-export enum Scope {
+export class Scope {
     /**
      * Single-line comments.
      */
-    LineComment,
+    public static readonly LineComment = new Scope('comment.line');
 
     /**
      * Block comments.
      */
-    BlockComment,
+    public static readonly BlockComment = new Scope('comment.block');
 
     /**
      * Documentation comments.
      */
-    DocComment,
+    public static readonly DocComment = new Scope('comment.block.documentation');
 
     /**
      * Documentation tags, like '@param' or 'FIXME'.
      */
-    DocTag,
+    public static readonly DocTag = new Scope('comment.block.documentation');
+
+    /**
+     * Generic keyword category.
+     */
+    public static readonly Keyword = new Scope('keyword.other');
+
+    /**
+     * Package name.
+     */
+    public static readonly PackageName = new Scope('entity.name.type.package');
+
+    /**
+     * Namespace name.
+     */
+     public static readonly NamespaceName = new Scope('entity.name.type.namespace');
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    constructor(
+        public readonly textMateName: string,
+    ) { }
 }
