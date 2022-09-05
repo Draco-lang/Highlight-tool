@@ -37,7 +37,7 @@ export type TextMateGrammar = {
     /**
      * The mode repository.
      */
-    repository?: Map<string, Mode>;
+    repository?: Record<string, Mode>;
 };
 
 /**
@@ -45,9 +45,9 @@ export type TextMateGrammar = {
  */
 export type Mode =
     // Match mode
-    | { scope: Scope; match: IPattern; captures?: Map<string, string>; contains?: Mode[]; }
+    | { scope: Scope; match: IPattern; captures?: Record<string, string>; contains?: Mode[]; }
     // Surround mode
-    | { scope?: Scope; begin: IPattern; end: IPattern; beginCaptures?: Map<string, Scope>; endCaptures?: Map<string, Scope>; contains?: Mode[]; }
+    | { scope?: Scope; begin: IPattern; end: IPattern; beginCaptures?: Record<string, Scope>; endCaptures?: Record<string, Scope>; contains?: Mode[]; }
     // Sub-repository mode
     | { contains: Mode[]; }
     // Reference mode
@@ -66,7 +66,7 @@ export function toTextMate(g: TextMateGrammar): object {
     let repo: any = undefined;
     if (g.repository !== undefined) {
         repo = {};
-        for (let [name, mode] of g.repository) repo[name] = modeToTextMate(mode, g);
+        for (let name in g.repository) repo[name] = modeToTextMate(g.repository[name], g);
     }
 
     return {
@@ -110,7 +110,7 @@ function modeToTextMate(m: Mode, g: TextMateGrammar): object {
     return result;
 }
 
-function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Map<string, Scope>): { regex: string; captures: any; } {
+function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Record<string, Scope>): { regex: string; captures: any; } {
     let result = p.toRegex();
     let captures: any = {};
 
@@ -131,7 +131,8 @@ function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Map<
 
     // Look into the existing captures and translate them to numbers
     if (existingCaptures !== undefined) {
-        for (let [groupName, groupValue] of existingCaptures) {
+        for (let groupName in existingCaptures) {
+            let groupValue = existingCaptures[groupName];
             // Translate capture group name into numbering
             var newGroupName = translateGroupName(groupName);
             // Assign into result

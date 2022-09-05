@@ -20,8 +20,8 @@ let dmla: TextMateGrammar = {
         include('comment'),
         include('package-block'),
     ],
-    repository: new Map([
-        ['comment', {
+    repository: {
+        comment: {
             scope: Scope.LineComment,
             match: regex('//.*$'),
             contains: [
@@ -30,15 +30,15 @@ let dmla: TextMateGrammar = {
                     match: or(literal('TODO'), literal('FIXME')),
                 }
             ],
-        }],
-        ['package-block', {
+        },
+        'package-block': {
             begin: cat(
                 tag(literal('package'), Scope.Keyword),
                 rep1(SPACE),
                 tag(QUALIFIED_NAME, Scope.PackageName)),
             end: literal('}'),
-        }],
-    ]),
+        },
+    },
 };
 let tm = toTextMate(dmla);
 
