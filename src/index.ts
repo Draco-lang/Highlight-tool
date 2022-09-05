@@ -1,7 +1,7 @@
 import { TextMateGrammar, toTextMate, include } from "./textmate";
 import { or, regex, literal, rep0, rep1, opt, cat, capture, tag, lookahead, lookbehind } from './pattern';
 import { Scope } from './scope';
-import { IDENT, SPACE, COMMENT_TAGS, KEYWORD as keyword, KEYWORD } from './builtins';
+import { IDENT, SPACE, COMMENT_TAGS, keyword } from './builtins';
 
 const QUALIFIED_NAME = cat(
     IDENT,
@@ -45,7 +45,6 @@ let dmla: TextMateGrammar = {
             }
         ],
         'comment-tags': {
-            scope: Scope.CommentTag,
             match: COMMENT_TAGS,
         },
         'package-block': {

@@ -45,7 +45,7 @@ export const COMMENT_TAGS = cat(
  * @param kws The possible keywords.
  * @returns The created pattern.
  */
-export const KEYWORD = (...kws: string[]) =>
+export const keyword = (...kws: string[]) =>
     cat(WORD_BOUNDARY,
         or(...kws.map(literal)),
         WORD_BOUNDARY);
