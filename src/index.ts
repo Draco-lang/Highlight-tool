@@ -1,5 +1,5 @@
 import { TextMateGrammar, toTextMate, include } from "./textmate";
-import { or, regex, literal, rep0, rep1, cat, capture, tag, lookahead, lookbehind } from './pattern';
+import { or, regex, literal, rep0, rep1, opt, cat, capture, tag, lookahead, lookbehind } from './pattern';
 import { Scope } from './scope';
 import { IDENT, SPACE, COMMENT_TAGS, KEYWORD as keyword, KEYWORD } from './builtins';
 
@@ -10,6 +10,16 @@ const QUALIFIED_NAME = cat(
         literal('.'),
         rep0(SPACE),
         IDENT)));
+
+const QUALIFIED_NAME_WITH_WILDCARD = cat(
+    QUALIFIED_NAME,
+    opt(cat(
+        literal('.'),
+        rep0(SPACE),
+        literal('*'))));
+
+const ENTITY_PREFIX = keyword('private', 'final');
+const ENTITY_CATEGORY = keyword('entity', 'contract');
 
 let dmla: TextMateGrammar = {
     name: 'D#',
@@ -23,28 +33,19 @@ let dmla: TextMateGrammar = {
         comment: [
             {
                 scope: Scope.LineComment,
-                begin: literal('//'),
+                begin: literal('//').tag(Scope.CommentPunctuation),
                 end: lookahead(regex('$')),
-                beginCaptures: {
-                    '$all': Scope.CommentPunctuation,
-                },
                 contains: [include('comment-tags')],
             },
             {
                 scope: Scope.BlockComment,
-                begin: literal('/*'),
-                end: literal('*/'),
-                beginCaptures: {
-                    '$all': Scope.CommentPunctuation,
-                },
-                endCaptures: {
-                    '$all': Scope.CommentPunctuation,
-                },
+                begin: literal('/*').tag(Scope.CommentPunctuation),
+                end: literal('*/').tag(Scope.CommentPunctuation),
                 contains: [include('comment-tags')],
             }
         ],
         'comment-tags': {
-            scope: Scope.DocTag,
+            scope: Scope.CommentTag,
             match: COMMENT_TAGS,
         },
         'package-block': {
@@ -59,8 +60,79 @@ let dmla: TextMateGrammar = {
                     end: lookahead(literal('{')),
                     contains: [include('comment')],
                 },
+                {
+                    begin: literal('{').tag(Scope.CurlyBraceOpen),
+                    end: literal('}').tag(Scope.CurlyBraceClose),
+                    contains: [
+                        include('import-statement'),
+                        include('package-element'),
+                        include('comment'),
+                    ]
+                },
                 include('comment'),
             ]
+        },
+        'import-statement': {
+            match: cat(
+                literal('import').tag(Scope.Keyword),
+                rep1(SPACE),
+                QUALIFIED_NAME_WITH_WILDCARD.tag(Scope.PackageName),
+            ),
+            contains: [include('comment')],
+        },
+        'package-element': [
+            include('package-block'),
+            include('model-element'),
+        ],
+        'model-element': [
+            include('annotation'),
+            include('entity-definition'),
+            include('operation-definition'),
+            {
+                scope: Scope.StorageModifier,
+                match: ENTITY_PREFIX,
+            },
+        ],
+        'entity-definition': {
+            begin: lookahead(ENTITY_CATEGORY),
+            end: lookbehind(literal('{')),
+            contains: [
+                {
+                    begin: cat(
+                        ENTITY_CATEGORY.tag(Scope.Keyword),
+                        rep1(SPACE),
+                        IDENT.tag(Scope.ClassName)),
+                    end: lookahead(literal('{')),
+                    contains: [
+                        // TODO: Base-type(s)
+                        include('comment'),
+                    ]
+                },
+                {
+                    begin: literal('{').tag(Scope.CurlyBraceOpen),
+                    end: literal('}').tag(Scope.CurlyBraceClose),
+                    contains: [
+                        include('operation-definition'),
+                        include('slot-definition'),
+                        include('slot-omission'),
+                        include('slot-value-assignment'),
+                        include('comment'),
+                    ]
+                },
+                {
+                    match: literal(';').tag(Scope.Semicolon),
+                },
+                include('comment'),
+            ],
+        },
+        'annotation': [
+            include('flag-annotation'),
+            include('constraint-annotation'),
+        ],
+        'flag-annotation': {
+            scope: Scope.Annotation,
+            match: cat(literal('@'), rep0(SPACE), QUALIFIED_NAME),
+            contains: [include('comment')],
         }
     },
 };

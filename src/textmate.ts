@@ -45,7 +45,7 @@ export type TextMateGrammar = {
  */
 export type Mode =
     // Match mode
-    | { scope: Scope; match: IPattern; captures?: Record<string, CaptureValue>; contains?: Mode[]; }
+    | { scope?: Scope; match: IPattern; captures?: Record<string, CaptureValue>; contains?: Mode[]; }
     // Surround mode
     | { scope?: Scope; begin: IPattern; end: IPattern; beginCaptures?: Record<string, CaptureValue>; endCaptures?: Record<string, CaptureValue>; contains?: Mode[]; }
     // Sub-repository mode

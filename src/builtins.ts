@@ -1,4 +1,5 @@
-import { regex, literal, cat, or, rep0, rep1, IPattern } from './pattern';
+import { IPattern, regex, literal, cat, or, rep0, rep1, opt } from './pattern';
+import { Scope } from './scope';
 
 /**
  * Represents a word boundary.
@@ -29,8 +30,15 @@ export const COMMENT_TAGS = cat(
         literal('OPTIMIZE'),
         literal('HACK'),
         literal('XXX')),
+    // Optionally, allow the user tag in parens after, like TODO(LPeter1997)
+    opt(cat(
+        literal('('),
+        rep1(regex('[^(]')).tag(Scope.CommentTagAuthor),
+        literal(')')
+    )),
+    // Colon required
     literal(':')
-);
+).tag(Scope.CommentTag);
 
 /**
  * Creates a sequence of alternative keywords that are separated by word boundaries.

@@ -61,6 +61,13 @@ export function rep1(p: IPattern): IPattern {
 }
 
 /**
+ * Shorthand for @see rep(p, 0, 1).
+ */
+ export function opt(p: IPattern): IPattern {
+    return rep(p, 0, 1);
+}
+
+/**
  * Captures a pattern with a name.
  * @param ps The pattern to capture.
  * @param name The name to give to the capture.
@@ -409,17 +416,21 @@ function regexStats(regex: string): RegexStats {
         return undefined;
     }
 
+    function top(): string | undefined {
+        if (stk.length == 0) return undefined;
+        return stk[stk.length - 1];
+    }
+
     function tryPop(ch: string): boolean {
-        if (stk.length > 0 && stk[stk.length - 1] == ch) {
-            stk.pop();
-            return true;
-        }
-        return false;
+        if (top() != ch) return false;
+        stk.pop();
+        return true;
     }
 
     while (i < regex.length) {
         // Grouping
-        if (regex[i] == '(') {
+        // It's only grouping, if we are not in a character class currently
+        if (regex[i] == '(' && top() != ']') {
             possibleSequencing();
             // Skip character
             ++i;
