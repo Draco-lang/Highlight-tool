@@ -139,6 +139,21 @@ function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Map<
         }
     }
 
+    // Look into each pattern with tags
+    for (let [pattern, tags] of result.tags) {
+        // Look through each tag
+        for (let tag of tags) {
+            // We only care about scopes
+            if (!(tag instanceof Scope)) continue;
+
+            // Look up the group index of the pattern
+            let groupIndex = result.captureGroups.get(pattern);
+            if (groupIndex === undefined) throw new Error(`Internal error, group has no index entry for tag ${tag}`);
+
+            captures[groupIndex.toString()] = fixScope(tag, g);
+        }
+    }
+
     return {
         regex: result.regex,
         captures: Object.keys(captures).length == 0

@@ -1,5 +1,5 @@
 import { TextMateGrammar, toTextMate, include } from "./textmate";
-import { or, regex, literal, rep0, rep1, cat, capture } from './pattern';
+import { or, regex, literal, rep0, rep1, cat, capture, tag } from './pattern';
 import { Scope } from './scope';
 
 const IDENT = regex('[_[:alpha:]][_[:alnum:]]*');
@@ -12,7 +12,7 @@ const QUALIFIED_NAME = cat(
         rep0(SPACE),
         IDENT)));
 
-let draco: TextMateGrammar = {
+let dmla: TextMateGrammar = {
     name: 'D#',
     scopeName: 'dsharp',
     extensions: ['dmla'],
@@ -33,17 +33,13 @@ let draco: TextMateGrammar = {
         }],
         ['package-block', {
             begin: cat(
-                capture(literal('package'), 'keyword'),
+                tag(literal('package'), Scope.Keyword),
                 rep1(SPACE),
-                capture(QUALIFIED_NAME, 'package-name')),
+                tag(QUALIFIED_NAME, Scope.PackageName)),
             end: literal('}'),
-            beginCaptures: new Map([
-                ['keyword', Scope.Keyword],
-                ['package-name', Scope.PackageName],
-            ]),
         }],
     ]),
 };
-let tm = toTextMate(draco);
+let tm = toTextMate(dmla);
 
 console.log(JSON.stringify(tm, undefined, 2));

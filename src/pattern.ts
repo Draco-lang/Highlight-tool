@@ -71,6 +71,38 @@ export function capture(p: IPattern, name: string): IPattern {
 }
 
 /**
+ * Creates a lookahead pattern.
+ * @param p The pattern to consider lookahead.
+ * @param negate True, if the pattern should be negated.
+ * @returns The constructed lookahead pattern.
+ */
+export function lookahead(p: IPattern, negate: boolean = false): IPattern {
+    return new LookaroundPattern(p, false, negate);
+}
+
+/**
+ * Creates a lookbehind pattern.
+ * @param p The pattern to consider lookbehind.
+ * @param negate True, if the pattern should be negated.
+ * @returns The constructed lookbehind pattern.
+ */
+export function lookbehind(p: IPattern, negate: boolean = false): IPattern {
+    return new LookaroundPattern(p, true, negate);
+}
+
+var captureCnt = 0;
+/**
+ * Appends tags onto a pattern.
+ * @param p The pattern to append the tags onto.
+ * @param tags The tags to append.
+ */
+export function tag(p: IPattern, ...tags: any[]): IPattern {
+    // Capture the pattern, if needed
+    if (!(p instanceof CapturePattern)) p = capture(p, `tagCapture_${captureCnt++}`);
+    return new TagPattern(p, tags);
+}
+
+/**
  * Represents a pattern that can be translated to a regular expression.
  */
 export interface IPattern {
@@ -114,6 +146,11 @@ type RegexResult = {
      * The capture groups mapped from the pattern to the group number.
      */
     captureGroups: Map<IPattern, number>;
+
+    /**
+     * The tags appended to patterns.
+     */
+    tags: Map<IPattern, any[]>;
 };
 
 class RegexPattern implements IPattern {
@@ -127,6 +164,7 @@ class RegexPattern implements IPattern {
             captureGroupCount: stats.captureGroupCount,
             captureNames: new Map(),
             captureGroups: new Map(),
+            tags: new Map(),
         };
     }
 
@@ -147,6 +185,7 @@ class AltPattern implements IPattern {
             captureGroupCount: a.captureGroupCount + b.captureGroupCount,
             captureNames: mergeMaps(a.captureNames, b.captureNames),
             captureGroups: mergeMaps(a.captureGroups, shiftCaptureGroups(b.captureGroups, a.captureGroupCount)),
+            tags: mergeMaps(a.tags, b.tags),
         };
     }
 
@@ -167,6 +206,7 @@ class SeqPattern implements IPattern {
             captureGroupCount: a.captureGroupCount + b.captureGroupCount,
             captureNames: mergeMaps(a.captureNames, b.captureNames),
             captureGroups: mergeMaps(a.captureGroups, shiftCaptureGroups(b.captureGroups, a.captureGroupCount)),
+            tags: mergeMaps(a.tags, b.tags),
         };
     }
 
@@ -215,6 +255,43 @@ class CapturePattern implements IPattern {
             captureGroupCount: e.captureGroupCount + 1,
             captureGroups: extendMap(shiftCaptureGroups(e.captureGroups, 1), [this.contentElement(), 1]),
             captureNames: extendMap(e.captureNames, [this.name, this.contentElement()]),
+            tags: e.tags,
+        };
+    }
+
+    contentElement(): IPattern {
+        return this.element.contentElement();
+    }
+}
+
+class LookaroundPattern implements IPattern {
+    constructor(private element: IPattern, private behind: boolean, private negate: boolean) { }
+
+    toRegex(): RegexResult {
+        let e = this.element.toRegex();
+        let op = `${this.behind ? '<' : ''}${this.negate ? '!' : '='}`;
+        return {
+            ...e,
+            precedence: Precedence.GROUP,
+            regex: `(?${op}${e.regex})`,
+        };
+    }
+
+    contentElement(): IPattern {
+        return this.element.contentElement();
+    }
+}
+
+class TagPattern implements IPattern {
+    constructor(private element: IPattern, private tags: any[]) { }
+
+    toRegex(): RegexResult {
+        if (!(this.element instanceof CapturePattern)) throw new Error('Tagging requires an underlying capture');
+
+        let e = this.element.toRegex();
+        return {
+            ...e,
+            tags: extendMap(e.tags, [this.contentElement(), this.tags]),
         };
     }
 
