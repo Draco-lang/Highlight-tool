@@ -5,18 +5,18 @@ import { IDENT, SPACE, COMMENT_TAGS, keyword } from './builtins';
 
 const QUALIFIED_NAME = cat(
     IDENT,
-    rep0(cat(
+    rep0(
         rep0(SPACE),
         literal('.'),
         rep0(SPACE),
-        IDENT)));
+        IDENT));
 
 const QUALIFIED_NAME_WITH_WILDCARD = cat(
     QUALIFIED_NAME,
-    opt(cat(
+    opt(
         literal('.'),
         rep0(SPACE),
-        literal('*'))));
+        literal('*')));
 
 const ENTITY_PREFIX = keyword('private', 'final');
 const ENTITY_CATEGORY = keyword('entity', 'contract');

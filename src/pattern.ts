@@ -47,24 +47,52 @@ export function rep(p: IPattern, min: number, max?: number): IPattern {
 }
 
 /**
- * Shorthand for @see rep(p, 0, undefined).
+ * Shorthand for @see rep.
  */
-export function rep0(p: IPattern): IPattern {
-    return rep(p, 0, undefined);
+export function rep0(...ps: IPattern[]): IPattern {
+    return rep(cat(...ps), 0, undefined);
 }
 
 /**
- * Shorthand for @see rep(p, 1, undefined).
+ * Shorthand for @see rep.
  */
-export function rep1(p: IPattern): IPattern {
-    return rep(p, 1, undefined);
+export function rep1(...ps: IPattern[]): IPattern {
+    return rep(cat(...ps), 1, undefined);
 }
 
 /**
- * Shorthand for @see rep(p, 0, 1).
+ * Shorthand for @see rep.
  */
- export function opt(p: IPattern): IPattern {
-    return rep(p, 0, 1);
+export function opt(...ps: IPattern[]): IPattern {
+    return rep(cat(...ps), 0, 1);
+}
+
+/**
+ * Shorthand for @see rep.
+ */
+export function atMost(p: IPattern, max: number): IPattern {
+    return rep(p, 0, max);
+}
+
+/**
+ * Shorthand for @see rep.
+ */
+export function atLeast(p: IPattern, min: number): IPattern {
+    return rep(p, min, undefined);
+}
+
+/**
+ * Shorthand for @see rep.
+ */
+export function between(p: IPattern, min: number, max: number): IPattern {
+    return rep(p, min, max);
+}
+
+/**
+ * Shorthand for @see rep.
+ */
+export function exactly(p: IPattern, n: number): IPattern {
+    return rep(p, n, n);
 }
 
 /**
