@@ -1,6 +1,6 @@
 import { TextMateGrammar, toTextMate, include } from "./textmate";
 import { or, regex, literal, rep0, rep1, opt, cat, capture, tag, lookahead, lookbehind } from './pattern';
-import { Scope } from './scope';
+import { Scope, Scopes } from './scope';
 import { IDENT, SPACE, COMMENT_TAGS, keyword } from './builtins';
 
 const QUALIFIED_NAME = cat(
@@ -32,15 +32,15 @@ let dmla: TextMateGrammar = {
     repository: {
         comment: [
             {
-                scope: Scope.LineComment,
-                begin: literal('//').tag(Scope.CommentPunctuation),
+                scope: Scopes.Comment.line('//'),
+                begin: literal('//').tag(Scopes.Comment.Punct),
                 end: lookahead(regex('$')),
                 contains: [include('comment-tags')],
             },
             {
-                scope: Scope.BlockComment,
-                begin: literal('/*').tag(Scope.CommentPunctuation),
-                end: literal('*/').tag(Scope.CommentPunctuation),
+                scope: Scopes.Comment.Block,
+                begin: literal('/*').tag(Scopes.Comment.Punct),
+                end: literal('*/').tag(Scopes.Comment.Punct),
                 contains: [include('comment-tags')],
             }
         ],
@@ -51,15 +51,15 @@ let dmla: TextMateGrammar = {
             contains: [
                 {
                     begin: cat(
-                        keyword('package').tag(Scope.Keyword),
+                        keyword('package').tag(Scopes.Keyword.Package),
                         rep1(SPACE),
-                        QUALIFIED_NAME.tag(Scope.PackageName)),
+                        QUALIFIED_NAME.tag(Scopes.Name.Package)),
                     end: lookahead(literal('{')),
                     contains: [include('comment')],
                 },
                 {
-                    begin: literal('{').tag(Scope.CurlyBraceOpen),
-                    end: literal('}').tag(Scope.CurlyBraceClose),
+                    begin: literal('{').tag(Scopes.punct('{')),
+                    end: literal('}').tag(Scopes.punct('}')),
                     contains: [
                         include('import-statement'),
                         include('package-element'),
@@ -71,9 +71,9 @@ let dmla: TextMateGrammar = {
         },
         'import-statement': {
             match: cat(
-                literal('import').tag(Scope.Keyword),
+                literal('import').tag(Scopes.Keyword.Import),
                 rep1(SPACE),
-                QUALIFIED_NAME_WITH_WILDCARD.tag(Scope.PackageName),
+                QUALIFIED_NAME_WITH_WILDCARD.tag(Scopes.Name.Package),
             ),
             contains: [include('comment')],
         },
@@ -85,7 +85,7 @@ let dmla: TextMateGrammar = {
             include('annotation'),
             include('entity-definition'),
             include('operation-definition'),
-            ENTITY_PREFIX.tag(Scope.StorageModifier),
+            ENTITY_PREFIX.tag(Scopes.modifier()),
         ],
         'entity-definition': {
             begin: lookahead(ENTITY_CATEGORY),
@@ -93,9 +93,9 @@ let dmla: TextMateGrammar = {
             contains: [
                 {
                     begin: cat(
-                        ENTITY_CATEGORY.tag(Scope.Keyword),
+                        ENTITY_CATEGORY.tag(Scopes.Keyword.Class),
                         rep1(SPACE),
-                        IDENT.tag(Scope.ClassName)),
+                        IDENT.tag(Scopes.Name.Class)),
                     end: lookahead(literal('{')),
                     contains: [
                         // TODO: Base-type(s)
@@ -103,8 +103,8 @@ let dmla: TextMateGrammar = {
                     ]
                 },
                 {
-                    begin: literal('{').tag(Scope.CurlyBraceOpen),
-                    end: literal('}').tag(Scope.CurlyBraceClose),
+                    begin: literal('{').tag(Scopes.punct('{')),
+                    end: literal('}').tag(Scopes.punct('}')),
                     contains: [
                         include('operation-definition'),
                         include('slot-definition'),
@@ -113,7 +113,7 @@ let dmla: TextMateGrammar = {
                         include('comment'),
                     ]
                 },
-                literal(';').tag(Scope.Semicolon),
+                literal(';').tag(Scopes.punct(';')),
                 include('comment'),
             ],
         },
@@ -122,7 +122,7 @@ let dmla: TextMateGrammar = {
             include('constraint-annotation'),
         ],
         'flag-annotation': {
-            scope: Scope.Annotation,
+            scope: Scopes.Name.Attribute,
             match: cat(literal('@'), rep0(SPACE), QUALIFIED_NAME),
             contains: [include('comment')],
         }
