@@ -94,7 +94,7 @@ let dmla: TextMateGrammar = {
         ],
         'entity-definition': {
             begin: lookahead(ENTITY_CATEGORY),
-            end: lookbehind(literal('{')),
+            end: lookbehind(literal('}')),
             contains: [
                 {
                     begin: cat(

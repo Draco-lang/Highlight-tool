@@ -352,7 +352,7 @@ function groupForPrecedence(regex: RegexResult, prec: number): RegexResult {
 /**
  * Regex precedences.
  */
-namespace Precedence {
+export namespace Precedence {
     export const LOWEST = 0;
     export const ALT = 0;
     export const SEQ = 1;
@@ -390,7 +390,7 @@ type RegexStats = {
  * @param regex The regex to compute the stats for.
  * @returns The statistics for the regex.
  */
-function regexStats(regex: string): RegexStats {
+export function regexStats(regex: string): RegexStats {
     // Tracked precedence
     var prec = Precedence.GROUP;
     // Number of capture groups

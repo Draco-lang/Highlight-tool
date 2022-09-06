@@ -1,4 +1,4 @@
-import { IPattern, regex } from './pattern';
+import { IPattern, Precedence, regexStats, regex } from './pattern';
 import { Scope } from './scope';
 
 /**
@@ -182,8 +182,12 @@ function compilePattern(p: IPattern, g: TextMateGrammar, existingCaptures?: Reco
 }
 
 function optimizeRegexWithCaptures(r: RegexWithCaptures): RegexWithCaptures {
-    let captureGroupCount = regex(r.regex).toRegex().captureGroupCount;
-    if (captureGroupCount == 1 && '1' in r.captures && r.regex.startsWith('(') && r.regex.endsWith(')')) {
+    let stats = regexStats(r.regex);
+    if (stats.captureGroupCount >= 1
+     && stats.precedence >= Precedence.GROUP
+     && '1' in r.captures
+     && r.regex.startsWith('(')
+     && r.regex.endsWith(')')) {
         // Common pattern, it's essentially
         // match: (...)
         // captures: { "1": ... }
@@ -191,9 +195,13 @@ function optimizeRegexWithCaptures(r: RegexWithCaptures): RegexWithCaptures {
         // Simplify to
         // match: ...
         // captures: { "0": ... }
+        //
+        // And shift the other groups alongside!
+        let captures: any = {};
+        for (let idx in r.captures) captures[(parseInt(idx) - 1).toString()] = r.captures[idx];
         r = {
             regex: r.regex.substring(1,  r.regex.length - 1),
-            captures: { '0': r.captures['1'] },
+            captures: captures,
         };
     }
     return r;
