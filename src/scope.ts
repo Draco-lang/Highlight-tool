@@ -95,7 +95,6 @@ export namespace Scopes {
          * @returns The constructed scope.
          */
         export function other(name?: string): Scope {
-            if (name === undefined) return Scope.create().withTextMateName('keyword.other');
             return Scope.create().withTextMateName(`keyword.other.${name}`);
         }
 
@@ -105,8 +104,7 @@ export namespace Scopes {
          * @returns The constructed scope.
          */
         export function control(name?: string): Scope {
-            if (name == undefined) return Scope.create().withTextMateName('keyword.control');
-            return Scope.create().withTextMateName(`keyword.control.${name}`);
+            return Scope.create().withTextMateName(append('keyword.control', name));
         }
 
         /**
@@ -115,8 +113,7 @@ export namespace Scopes {
          * @returns The constructed scope.
          */
         export function operator(name?: string): Scope {
-            if (name == undefined) return Scope.create().withTextMateName('keyword.operator');
-            return Scope.create().withTextMateName(`keyword.operator.${name}`);
+            return Scope.create().withTextMateName(append('keyword.operator', name));
         }
 
         export const Package = other('package');
@@ -147,14 +144,26 @@ export namespace Scopes {
          * @returns The constructed scope.
          */
         export function type(name?: string) {
-            if (name == undefined) return Scope.create().withTextMateName('entity.name.type');
-            return Scope.create().withTextMateName(`entity.name.type.${name}`);
+            return Scope.create().withTextMateName(append('entity.name.type', name));
+        }
+
+        /**
+         * Constructs a scope for some builtin value, like 'this', 'super' or 'self'.
+         * @param name The buildin values name.
+         * @returns The constructed scope.
+         */
+        export function builtin(name?: string) {
+            return Scope.create().withTextMateName(append('variable.language', name));
         }
 
         export const Package = type('package');
         export const Namespace = type('namespace');
         export const Class = type('class');
         export const Struct = type('struct');
+
+        export const This = builtin('this');
+        export const Super = builtin('super');
+        export const Self = builtin('self');
 
         export const Function = Scope.create()
             .withTextMateName('entity.name.function');
@@ -170,8 +179,7 @@ export namespace Scopes {
      * @returns The constructed scope.
      */
     export function modifier(name?: string) {
-        if (name == undefined) return Scope.create().withTextMateName('storage.modifier');
-        return Scope.create().withTextMateName(`storage.modifier.${name}`);
+        return Scope.create().withTextMateName(append('storage.modifier', name));
     }
 
     /**
@@ -214,4 +222,107 @@ export namespace Scopes {
                     .withTextMateName('punctuation');
         }
     }
+
+    /**
+     * Literal values.
+     */
+    export namespace Literal {
+        /**
+         * Constructs a generic literal scope.
+         * @param name The name of the literal.
+         * @returns The constructed scope.
+         */
+        export function other(name?: string): Scope {
+            return Scope.create().withTextMateName(append('constant.other', name));
+        }
+
+        /**
+         * Creates a scope for numeric literals.
+         * @param name The name of the numeric literal.
+         * @returns The constructed scope.
+         */
+        export function numeric(name?: string) {
+            return Scope.create().withTextMateName(append('constant.numeric', name));
+        }
+
+        /**
+         * Creates a scope for keyword-like literals.
+         * @param name The name of the literal.
+         * @returns The constructed scope.
+         */
+        export function keyword(name?: string) {
+            return Scope.create().withTextMateName(append('constant.language', name));
+        }
+
+        /**
+         * Creates a scope for string literals.
+         * @param punct The punctuation character that starts or ends the string.
+         */
+        export function string(punct?: string) {
+            switch (punct) {
+                case '\'':
+                    return Scope.create()
+                        .withTextMateName('string.quoted.single');
+
+                case '"':
+                    return Scope.create()
+                        .withTextMateName('string.quoted.double');
+
+                case '"""':
+                    return Scope.create()
+                        .withTextMateName('string.quoted.triple');
+
+                default:
+                    return Scope.create()
+                        .withTextMateName('string.quoted.other');
+            }
+        }
+
+        export const Char = Scope.create()
+            .withTextMateName('constant.character');
+        export const CharEscape = Scope.create()
+            .withTextMateName('constant.character.escape');
+        export const RegExp = Scope.create()
+            .withTextMateName('string.regexp');
+    }
+
+    /**
+     * Things related to markup.
+     */
+    export namespace Markup {
+        export function heading(tag?: string): Scope {
+            return Scope.create().withTextMateName(append('markup.heading', tag));
+        }
+
+        export function snippet(name?: string): Scope {
+            return Scope.create().withTextMateName(append('markup.raw', name));
+        }
+
+        export const Link = Scope.create()
+            .withTextMateName('markup.underline.link');
+
+        export const Underline = Scope.create()
+            .withTextMateName('markup.underline');
+        export const Bold = Scope.create()
+            .withTextMateName('markup.bold');
+        export const Italic = Scope.create()
+            .withTextMateName('markup.italic');
+
+        export const List = Scope.create()
+            .withTextMateName('markup.list');
+        export const OrderedList = Scope.create()
+            .withTextMateName('markup.list.numbered');
+        export const UnorderedList = Scope.create()
+            .withTextMateName('markup.list.unnumbered');
+
+        export const Quote = Scope.create()
+            .withTextMateName('markup.quote');
+        export const Raw = Scope.create()
+            .withTextMateName('markup.raw');
+    }
+}
+
+function append(s1: string, s2?: string) {
+    if (s2 === undefined) return s1;
+    return `${s1}.${s2}`;
 }
