@@ -44,9 +44,7 @@ let dmla: TextMateGrammar = {
                 contains: [include('comment-tags')],
             }
         ],
-        'comment-tags': {
-            match: COMMENT_TAGS,
-        },
+        'comment-tags': COMMENT_TAGS,
         'package-block': {
             begin: lookahead(keyword('package')),
             end: lookbehind(literal('}')),
@@ -87,10 +85,7 @@ let dmla: TextMateGrammar = {
             include('annotation'),
             include('entity-definition'),
             include('operation-definition'),
-            {
-                scope: Scope.StorageModifier,
-                match: ENTITY_PREFIX,
-            },
+            ENTITY_PREFIX.tag(Scope.StorageModifier),
         ],
         'entity-definition': {
             begin: lookahead(ENTITY_CATEGORY),
@@ -118,9 +113,7 @@ let dmla: TextMateGrammar = {
                         include('comment'),
                     ]
                 },
-                {
-                    match: literal(';').tag(Scope.Semicolon),
-                },
+                literal(';').tag(Scope.Semicolon),
                 include('comment'),
             ],
         },

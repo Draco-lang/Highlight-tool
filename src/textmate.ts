@@ -1,4 +1,4 @@
-import { IPattern, Precedence, regexStats, regex } from './pattern';
+import { IPattern, PatternBase, Precedence, regexStats, regex } from './pattern';
 import { Scope } from './scope';
 
 /**
@@ -52,6 +52,8 @@ export type Mode =
     | { contains: Mode[]; }
     // Reference mode
     | { include: string; }
+    // An inline pattern, shorthand for a match
+    | IPattern
     ;
 
 type CaptureValue = Mode | Scope;
@@ -82,6 +84,9 @@ export function toTextMate(g: TextMateGrammar): object {
 }
 
 function modeToTextMate(m: Mode | Mode[], g: TextMateGrammar): object {
+    // An inline pattern is just a match, wrap it up
+    if (m instanceof PatternBase) return modeToTextMate({ match: m }, g);
+
     // Arrays are groupings of other modes, just wrap it up
     if (Array.isArray(m)) return modeToTextMate({ contains: m as Mode[] }, g);
 

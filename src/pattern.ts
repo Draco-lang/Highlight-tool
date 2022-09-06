@@ -172,7 +172,7 @@ type RegexResult = {
     tags: Map<IPattern, any[]>;
 };
 
-abstract class PatternBase implements IPattern {
+export abstract class PatternBase implements IPattern {
     constructor() { }
 
     abstract toRegex(): RegexResult;
