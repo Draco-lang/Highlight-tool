@@ -1,6 +1,6 @@
 {
   "name": "highlight-tool",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "A tool to generate syntax highlighting for multiple editors.",
   "main": "dist/index.js",
   "scripts": {
