@@ -4,24 +4,24 @@ import { Scope, Scopes } from './scope';
 /**
  * Represents a word boundary.
  */
-export const WORD_BOUNDARY = regex('\\b');
+export const WordBoundary = regex('\\b');
 
 /**
  * Represents any space character.
  */
-export const SPACE = regex('\\s');
+export const Space = regex('\\s');
 
 /**
  * An identifier pattern that can start with letters or '_' and continue with
  * alphanumeric characters or '_'.
  */
-export const IDENT = regex('[_[:alpha:]][_[:alnum:]]*');
+export const Ident = regex('[_[:alpha:]][_[:alnum:]]*');
 
 /**
  * Common tags in comments.
  */
-export const COMMENT_TAGS = cat(
-    WORD_BOUNDARY,
+export const CommentTag = cat(
+    WordBoundary,
     or(
         literal('TODO'),
         literal('FIXME'),
@@ -46,6 +46,6 @@ export const COMMENT_TAGS = cat(
  * @returns The created pattern.
  */
 export const keyword = (...kws: string[]) =>
-    cat(WORD_BOUNDARY,
+    cat(WordBoundary,
         or(...kws.map(literal)),
-        WORD_BOUNDARY);
+        WordBoundary);
